@@ -100,7 +100,7 @@ void setup()
   laser.blok = new StaticEntity(1, 10, spaceship_y_pos, 20);
   laser.blok->populateMatrix(1);
   laser.is_laser_able = true;
-  laser.laser_timer = 15;
+  laser.laser_timer = 10;
 
   Serial.println(spaceship_max_y_pos);
 }
@@ -144,7 +144,7 @@ void loop()
     if (laser.laser_timer == 0)
     {
       laser.is_laser_able = true;
-      laser.laser_timer = 15;
+      laser.laser_timer = 10;
     }
   }
 
