@@ -9,7 +9,7 @@ Spaceship::Spaceship(int height, int width,
 {
 
   this->speed = 3;
-  const int values[height][height] = {
+  const int values[height][width] = {
       {1, 0, 0, 0, 0, 0},
       {1, 1, 0, 0, 0, 0},
       {1, 0, 1, 0, 0, 0},
@@ -48,4 +48,12 @@ void Spaceship::moveDown()
   {
     this->y = this->max_y;
   }
+}
+
+void Spaceship::moveLeft()
+{
+}
+
+void Spaceship::moveRight()
+{
 }

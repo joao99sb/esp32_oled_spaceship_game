@@ -11,7 +11,6 @@ public:
             int min_y, int min_x);
   void moveUp() override;
   void moveDown() override;
-  void laserUp();
-
-
+  void moveLeft() override;
+  void moveRight() override;
 };

@@ -1,12 +1,14 @@
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
+#include <vector>
 
 #include "../include/matrix.h"
 #include "../include/menu.h"
 #include "../include/spaceship.h"
 #include "../include/buffer.h"
 #include "../include/staticEntity.h"
+#include "../include/enemies.h"
 
 #define SCREEN_WIDTH 128 // Largura da tela em pixels
 #define SCREEN_HEIGHT 64 // Altura da tela em pixels
@@ -68,9 +70,26 @@ void setupMenu()
   // Exibe "Hello, world!" na tela
   display.println("Hello, world!");
 }
+
+void loseGameMsg()
+{
+  display.clearDisplay();     
+  display.setTextSize(2);      // Tamanho do texto
+  display.setTextColor(WHITE); // Cor do texto
+  display.setCursor(0, 0);     // Posição inicial do texto (x, y)
+
+  // Exibe "Hello, world!" na tela
+  display.println("voce perdeu");
+  display.display();
+}
+
+std::vector<Enemies *> enemies_list;
+
+int GAME_STATUS = 1;
 void setup()
 {
   Serial.begin(9600);
+  randomSeed(analogRead(0));
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS))
   {
@@ -101,18 +120,44 @@ void setup()
   laser.blok->populateMatrix(1);
   laser.is_laser_able = true;
   laser.laser_timer = 10;
+}
+void remove_enemie(int index)
+{
 
-  Serial.println(spaceship_max_y_pos);
+  delete enemies_list[index];                       // Libera a memória do objeto
+  enemies_list.erase(enemies_list.begin() + index); // Remove o ponteiro do vetor
+}
+void check_collision_with_enemies()
+{
+  for (int i = 0; i < enemies_list.size(); i++)
+  {
+    Enemies *enemy = enemies_list[i];
+
+    int laserY = laser.blok->getCurrentY();
+    int enemyY = enemy->getCurrentY();
+    int laserWidth = laser.blok->getWidth();
+    int laserHeight = laser.blok->getHeight();
+    int enemyWidth = enemy->getWidth();
+    int enemyHeight = enemy->getHeight();
+
+    // Verifica se há interseção entre o laser e o inimigo
+
+    Serial.printf("LAZER Y: %d\n", laserY);
+    Serial.printf("enemy Y: %d,  enemy + altura: %d \n", enemyY, enemyY + enemyHeight);
+
+    if (
+        (laserY + MENU_HEIGHT >= enemyY) &&
+        (laserY <= enemyY + enemyHeight - MENU_HEIGHT))
+    {
+
+      remove_enemie(i);
+      break;
+    }
+  }
 }
 
-void loop()
+void handle_actions()
 {
-  gameBuffer->resetBuffer();
-  // laser->populateMatrix(0);
-
-  // draw menu
-  // drawImageFromMatrix(menu, 0, 0);
-
   int up_btn_state = digitalRead(BUTTON_PIN_1);
   int down_btn_state = digitalRead(BUTTON_PIN_2);
   int laser_btn_state = digitalRead(BUTTON_PIN_3);
@@ -136,6 +181,8 @@ void loop()
     gameBuffer->drawImageFromMatrix(laser.blok, laser.blok->getCurrentY() + GAME_BUFFER_START, 20);
 
     laser.is_laser_able = false;
+
+    check_collision_with_enemies();
   }
 
   if (!laser.is_laser_able)
@@ -146,6 +193,57 @@ void loop()
       laser.is_laser_able = true;
       laser.laser_timer = 10;
     }
+  }
+}
+
+int enemies_clock = 30;
+
+void enemies_move(Enemies *enemies, int index)
+{
+  enemies->moveLeft();
+  if (enemies->getCurrentX() == 0)
+  {
+    enemies->setCurrentX(0);
+    GAME_STATUS = 0;
+    remove_enemie(index);
+  }
+}
+
+void handle_enimies()
+{
+
+  if (enemies_clock == 0)
+  {
+    int random_y_position = random(GAME_BUFFER_START, SCREEN_HEIGHT - 10);
+    enemies_list.push_back(new Enemies(10, 7, random_y_position, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH, 0, 0));
+    enemies_clock = 30;
+  }
+  else
+  {
+    enemies_clock--;
+  }
+}
+
+void loop()
+{
+
+  if (GAME_STATUS == 0)
+  {
+    loseGameMsg();
+    return;
+  }
+  gameBuffer->resetBuffer();
+
+  // draw menu
+  // drawImageFromMatrix(menu, 0, 0);
+  handle_actions();
+
+  handle_enimies();
+  for (int i = 0; i < enemies_list.size(); i++)
+  {
+    enemies_move(enemies_list[i], i);
+
+    gameBuffer->drawImageFromMatrix(enemies_list[i], enemies_list[i]->getCurrentY(), enemies_list[i]->getCurrentX());
   }
 
   // draw image
