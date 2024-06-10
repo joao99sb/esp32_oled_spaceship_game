@@ -2,93 +2,157 @@
 #include <Adafruit_SSD1306.h>
 #include <Adafruit_GFX.h>
 
-#define SCREEN_WIDTH 128 // OLED display width, in pixels
-#define SCREEN_HEIGHT 64 // OLED display height, in pixels'
+#include "../include/matrix.h"
+#include "../include/menu.h"
+#include "../include/spaceship.h"
+#include "../include/buffer.h"
+#include "../include/staticEntity.h"
+
+#define SCREEN_WIDTH 128 // Largura da tela em pixels
+#define SCREEN_HEIGHT 64 // Altura da tela em pixels
+
+#define OLED_RESET -1 // RST não conectado
+#define OLED_ADDRESS 0x3C
 
 #define BUTTON_PIN_1 2
 #define BUTTON_PIN_2 4
 #define BUTTON_PIN_3 19
 
-#define OLED_ADDRESS 0x3C
-#define OLED_RESET 4
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-#define NUMFLAKES 10 // Number of snowflakes in the animation example
+// Buffer que representa a tela
+#define BUFFER_HEIGHT SCREEN_HEIGHT - MENU_HEIGHT
 
-#define LOGO_HEIGHT 16
-#define LOGO_WIDTH 16
+#define GAME_BUFFER_START MENU_HEIGHT
+Buffer *gameBuffer;
 
-#define BOTAO_PIN 4 // Pino ao qual o botão está conectado
+void updateDisplayFromBuffer(Buffer *buffer)
+{
+  // Limpa o buffer do display
 
-// Bitmap do foguete (exemplo simples)
-const uint8_t foguete_bitmap[] = {
-    0b0000000,
-    0b0001100,
-    0b0001110,
-    0b0111111,
-    0b1111111,
-    0b0111111,
-    0b0001110,
-    0b0001100,
-};
+  for (int y = 0; y < SCREEN_HEIGHT; y++)
+  {
+    for (int x = 0; x < SCREEN_WIDTH; x++)
+    {
+      if (buffer->getMatrixValue(y, x) == 1)
+      {
+        display.drawPixel(x, y, WHITE); // Desenha um pixel branco na posição (x, y)
+      }
+    }
+  }
+}
 
-int posicaoYFoguete = SCREEN_HEIGHT / 2; // Posição inicial do foguete
+#define SPACE_WIDTH 6
+#define SPACE_HEIGHT 11
 
+int spaceship_x_pos = 1;                                                // Posição X inicial da imagem
+int spaceship_y_pos = (SCREEN_HEIGHT / 2) - MENU_HEIGHT;                // Posição Y inicial da imagem
+int spaceship_max_y_pos = SCREEN_HEIGHT - (MENU_HEIGHT + SPACE_HEIGHT); // Posição Y inicial da imagem
+Spaceship *spaceship;
+
+typedef struct
+{
+  StaticEntity *blok;
+  int laser_timer;
+  bool is_laser_able;
+} Laser;
+Laser laser;
+Buffer *menu;
+
+void setupMenu()
+{
+  display.setTextSize(1);      // Tamanho do texto
+  display.setTextColor(WHITE); // Cor do texto
+  display.setCursor(0, 0);     // Posição inicial do texto (x, y)
+
+  // Exibe "Hello, world!" na tela
+  display.println("Hello, world!");
+}
 void setup()
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDRESS))
-  { // Endereço 0x3C para displays com 128x64 pixels
-    Serial.println(F("Falha ao iniciar o display OLED"));
+  {
+    Serial.println(F("SSD1306 allocation failed"));
     for (;;)
       ; // Não faça nada se falhar
   }
 
-  display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
+  // button setup
+  pinMode(BUTTON_PIN_1, INPUT);
+  pinMode(BUTTON_PIN_2, INPUT);
+  pinMode(BUTTON_PIN_3, INPUT);
 
-  pinMode(BUTTON_PIN_1, INPUT); // Configura o pino do botão de subir como entrada com pull-up interno
-  pinMode(BUTTON_PIN_2, INPUT); // Configura o pino do botão de descer como entrada com pull-up interno
-  pinMode(BUTTON_PIN_3, INPUT); // Configura o pino do botão de descer como entrada com pull-up interno
+  display.clearDisplay(); // Limpa o buffer do display
+
+  // Inicializa o buffer com zeros
+  // buffer = new Matrix(BUFFER_HEIGHT, SCREEN_WIDTH);
+  gameBuffer = new Buffer(SCREEN_HEIGHT, SCREEN_WIDTH);
+  gameBuffer->populateMatrix(0);
+  menu = new Buffer(MENU_HEIGHT, SCREEN_WIDTH);
+  menu->populateMatrix(1);
+
+  spaceship = new Spaceship(SPACE_HEIGHT, SPACE_WIDTH,
+                            spaceship_y_pos, spaceship_x_pos,
+                            spaceship_max_y_pos, SCREEN_WIDTH,
+                            1, 1);
+  laser.blok = new StaticEntity(1, 10, spaceship_y_pos, 20);
+  laser.blok->populateMatrix(1);
+  laser.is_laser_able = true;
+  laser.laser_timer = 15;
+
+  Serial.println(spaceship_max_y_pos);
 }
 
 void loop()
 {
-  int upBtnState = digitalRead(2);
-  int downBtnState = digitalRead(4);
-  int laserState = digitalRead(19);
+  gameBuffer->resetBuffer();
+  // laser->populateMatrix(0);
 
-  if (upBtnState == HIGH)
-  { // Se o botão de subir estiver pressionado
-    posicaoYFoguete -= 5;
-    if (posicaoYFoguete < 0)
+  // draw menu
+  // drawImageFromMatrix(menu, 0, 0);
+
+  int up_btn_state = digitalRead(BUTTON_PIN_1);
+  int down_btn_state = digitalRead(BUTTON_PIN_2);
+  int laser_btn_state = digitalRead(BUTTON_PIN_3);
+
+  if (up_btn_state == HIGH)
+  {
+    spaceship->moveUp();
+  }
+  if (down_btn_state == HIGH)
+  {
+    spaceship->moveDown();
+  }
+
+  if (laser_btn_state == HIGH && laser.is_laser_able)
+  {
+
+    laser.blok->setCurrentX(SCREEN_WIDTH / 5);
+
+    int spaceship_center_position = spaceship->getCurrentY() + spaceship->getHeight() / 2;
+    laser.blok->setCurrentY(spaceship_center_position); // Começa do centro do foguete
+    gameBuffer->drawImageFromMatrix(laser.blok, laser.blok->getCurrentY() + GAME_BUFFER_START, 20);
+
+    laser.is_laser_able = false;
+  }
+
+  if (!laser.is_laser_able)
+  {
+    laser.laser_timer--;
+    if (laser.laser_timer == 0)
     {
-      posicaoYFoguete = 0; // Limita a posição mínima do foguete
+      laser.is_laser_able = true;
+      laser.laser_timer = 15;
     }
-  }
-  else if (downBtnState == HIGH)
-  { // Se o botão de descer estiver pressionado
-    posicaoYFoguete += 5;
-    if (posicaoYFoguete > SCREEN_HEIGHT - 8)
-    {                                      // 8 é a altura do bitmap do foguete
-      posicaoYFoguete = SCREEN_HEIGHT - 8; // Limita a posição máxima do foguete
-    }
-    display.drawLine(40, posicaoYFoguete + 4, 40, 0, WHITE); 
   }
 
+  // draw image
+  gameBuffer->drawImageFromMatrix(spaceship, spaceship->getCurrentY() + MENU_HEIGHT, 0);
   display.clearDisplay();
-  display.drawBitmap(0, posicaoYFoguete, foguete_bitmap, 8, 8, WHITE); // Desenha o foguete na posição atualizada
-
-  if (laserState == HIGH)
-  {                                     // Se o botão de disparar laser estiver pressionado
-    int xInicial = SCREEN_WIDTH / 5;    // Centraliza o laser na tela
-    int yInicial = posicaoYFoguete + 4; // Começa do centro do foguete
-    int comprimentoLaser = 20;          // Define o comprimento do laser
-    display.drawFastHLine(xInicial, yInicial, comprimentoLaser, WHITE);
-  }
-
+  updateDisplayFromBuffer(gameBuffer);
+  updateDisplayFromBuffer(menu);
+  setupMenu();
   display.display();
-  delay(10);
 }
