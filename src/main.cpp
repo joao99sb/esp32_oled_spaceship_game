@@ -61,7 +61,7 @@ typedef struct
 Laser laser;
 Buffer *menu;
 int score = 0;
-
+int lives = 3;
 void setupMenu()
 {
 
@@ -78,18 +78,17 @@ void setupMenu()
   display.setCursor(0, 0);     // Posição inicial do texto (x, y)
 
   // Exibe "Hello, world!" na tela
-  display.println("score");
   display.display();
 }
 
-void showScore()
+void showSideBar()
 {
   display.setTextSize(1);      // Tamanho do texto
   display.setTextColor(WHITE); // Cor do texto
   display.setCursor(0, 0);     // Posição inicial do texto (x, y)
 
   // Exibe "Hello, world!" na tela
-  display.printf("score: %d", score);
+  display.printf("score: %d    vidas: %d", score, lives);
 }
 
 void loseGameMsg()
@@ -106,9 +105,20 @@ void loseGameMsg()
   display.display();
 }
 
+void initializeGameMsg()
+{
+  display.clearDisplay();
+  display.setTextSize(2);      // Tamanho do texto
+  display.setTextColor(WHITE); // Cor do texto
+  display.setCursor(0, 0);     // Posição inicial do texto (x, y)
+
+  // Exibe "Hello, world!" na tela
+  display.println("Pressione algum botao para comecar");
+  display.display();
+}
+
 std::vector<Enemies *> enemies_list;
 
-int GAME_STATUS = 1;
 void setup()
 {
   Serial.begin(9600);
@@ -141,6 +151,13 @@ void setup()
   laser.blok->populateMatrix(1);
   laser.is_laser_able = true;
   laser.laser_timer = 10;
+
+  initializeGameMsg();
+  while (digitalRead(BUTTON_PIN_1) == LOW && digitalRead(BUTTON_PIN_2) == LOW && digitalRead(BUTTON_PIN_3) == LOW)
+  {
+    ;
+    ;
+  }
 }
 void remove_enemie(int index)
 {
@@ -184,10 +201,19 @@ void handle_actions()
   if (up_btn_state == HIGH)
   {
     spaceship->moveUp();
+    spaceship->increaseSpeed();
+    spaceship->increaseSpeed();
   }
   if (down_btn_state == HIGH)
   {
     spaceship->moveDown();
+    spaceship->increaseSpeed();
+    spaceship->increaseSpeed();
+  }
+
+  if (up_btn_state == LOW && down_btn_state == LOW)
+  {
+    spaceship->setSpeed(3);
   }
 
   if (laser_btn_state == HIGH && laser.is_laser_able)
@@ -215,7 +241,7 @@ void handle_actions()
   }
 }
 
-int enemies_clock = 30;
+int enemies_clock = 25;
 
 void enemies_move(Enemies *enemies, int index)
 {
@@ -223,7 +249,7 @@ void enemies_move(Enemies *enemies, int index)
   if (enemies->getCurrentX() == 0)
   {
     enemies->setCurrentX(0);
-    GAME_STATUS = 0;
+    lives--;
     remove_enemie(index);
   }
 }
@@ -251,9 +277,11 @@ void handle_enimies()
       enemies_list.push_back(new_enemie);
     }
 
-    int factor = enemies_speed - 2;
+    // int factor = enemies_speed - 2;
 
-    enemies_clock = 30 - factor;
+    // enemies_clock = 30 - factor;
+
+    enemies_clock = 25;
   }
   else
   {
@@ -261,13 +289,39 @@ void handle_enimies()
   }
 }
 
+void endGame()
+{
+  int up_btn_state = digitalRead(BUTTON_PIN_1);
+  int down_btn_state = digitalRead(BUTTON_PIN_2);
+  int laser_btn_state = digitalRead(BUTTON_PIN_3);
+  loseGameMsg();
+  if (enemies_list.size() > 0)
+  {
+    for (int i = 0; i < enemies_list.size(); i++)
+    {
+      remove_enemie(i);
+    }
+  }
+
+  while (up_btn_state == LOW && down_btn_state == LOW && laser_btn_state == LOW)
+  {
+    up_btn_state = digitalRead(BUTTON_PIN_1);
+    down_btn_state = digitalRead(BUTTON_PIN_2);
+    laser_btn_state = digitalRead(BUTTON_PIN_3);
+  }
+  score = 0;
+  enemies_speed = 2;
+  difculty_level_step = 0.1;
+  lives = 3;
+}
+
 void loop()
 {
 
-  if (GAME_STATUS == 0)
+  if (lives == 0)
   {
-    loseGameMsg();
-    return;
+    endGame();
+    delay(500);
   }
   gameBuffer->resetBuffer();
 
@@ -288,6 +342,6 @@ void loop()
   display.clearDisplay();
   updateDisplayFromBuffer(gameBuffer);
   updateDisplayFromBuffer(menu);
-  showScore();
+  showSideBar();
   display.display();
 }

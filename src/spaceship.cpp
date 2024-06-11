@@ -8,7 +8,7 @@ Spaceship::Spaceship(int height, int width,
       DynamicEntity(initial_y, initial_x, max_y, max_x, min_y, min_x)
 {
 
-  this->speed = 4;
+  this->speed = 3;
   const int values[height][width] = {
       {1, 0, 0, 0, 0, 0},
       {1, 1, 0, 0, 0, 0},
@@ -56,4 +56,14 @@ void Spaceship::moveLeft()
 
 void Spaceship::moveRight()
 {
+}
+
+void Spaceship::setSpeed(int speed)
+{
+  this->speed = speed;
+}
+
+void Spaceship::multSpeed(int t)
+{
+  this->speed *= t;
 }

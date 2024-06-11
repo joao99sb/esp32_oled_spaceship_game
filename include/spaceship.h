@@ -13,4 +13,6 @@ public:
   void moveDown() override;
   void moveLeft() override;
   void moveRight() override;
+  void setSpeed(int speed);
+  void multSpeed(int t);
 };
