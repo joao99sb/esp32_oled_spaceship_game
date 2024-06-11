@@ -7,3 +7,8 @@ DynamicEntity::DynamicEntity(int initial_y, int initial_x, int max_y, int max_x,
   this->max_y = max_y;
   this->max_x = max_x;
 }
+
+void DynamicEntity::increaseSpeed()
+{
+  this->speed++;
+}

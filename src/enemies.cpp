@@ -1,13 +1,13 @@
 #include "../include/enemies.h"
 
 Enemies::Enemies(int height, int width,
-                 int initial_y, int initial_x,
+                 int initial_y, int initial_x, int speed,
                  int max_y, int max_x,
                  int min_y, int min_x)
     : Matrix(height, width),
       DynamicEntity(initial_y, initial_x, max_y, max_x, min_y, min_x)
 {
-  this->speed = 3;
+  this->speed = speed;
   const int values[height][height] = {
       {0, 0, 0, 1, 0, 0, 0},
       {0, 0, 1, 0, 1, 0, 0},
@@ -64,4 +64,3 @@ void Enemies::moveRight()
     this->x = this->max_x;
   }
 }
-

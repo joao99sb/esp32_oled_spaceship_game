@@ -60,26 +60,49 @@ typedef struct
 } Laser;
 Laser laser;
 Buffer *menu;
+int score = 0;
 
 void setupMenu()
+{
+
+  StaticEntity *menu_text = new StaticEntity(MENU_HEIGHT, SCREEN_WIDTH, 0, 0);
+  menu_text->populateMatrix(0);
+
+  for (int i = 0; i < SCREEN_WIDTH; i++)
+  {
+    menu_text->setMatrixValue(MENU_HEIGHT - 1, i, 1);
+  }
+  menu->drawImageFromMatrix(menu_text, 0, 0);
+  display.setTextSize(1);      // Tamanho do texto
+  display.setTextColor(WHITE); // Cor do texto
+  display.setCursor(0, 0);     // Posição inicial do texto (x, y)
+
+  // Exibe "Hello, world!" na tela
+  display.println("score");
+  display.display();
+}
+
+void showScore()
 {
   display.setTextSize(1);      // Tamanho do texto
   display.setTextColor(WHITE); // Cor do texto
   display.setCursor(0, 0);     // Posição inicial do texto (x, y)
 
   // Exibe "Hello, world!" na tela
-  display.println("Hello, world!");
+  display.printf("score: %d", score);
 }
 
 void loseGameMsg()
 {
-  display.clearDisplay();     
-  display.setTextSize(2);      // Tamanho do texto
+  display.clearDisplay();
+  display.setTextSize(1);      // Tamanho do texto
   display.setTextColor(WHITE); // Cor do texto
   display.setCursor(0, 0);     // Posição inicial do texto (x, y)
 
   // Exibe "Hello, world!" na tela
   display.println("voce perdeu");
+  display.setTextSize(2);
+  display.printf("\nscore: %d", score);
   display.display();
 }
 
@@ -105,12 +128,10 @@ void setup()
 
   display.clearDisplay(); // Limpa o buffer do display
 
-  // Inicializa o buffer com zeros
-  // buffer = new Matrix(BUFFER_HEIGHT, SCREEN_WIDTH);
   gameBuffer = new Buffer(SCREEN_HEIGHT, SCREEN_WIDTH);
   gameBuffer->populateMatrix(0);
   menu = new Buffer(MENU_HEIGHT, SCREEN_WIDTH);
-  menu->populateMatrix(1);
+  setupMenu();
 
   spaceship = new Spaceship(SPACE_HEIGHT, SPACE_WIDTH,
                             spaceship_y_pos, spaceship_x_pos,
@@ -142,15 +163,13 @@ void check_collision_with_enemies()
 
     // Verifica se há interseção entre o laser e o inimigo
 
-    Serial.printf("LAZER Y: %d\n", laserY);
-    Serial.printf("enemy Y: %d,  enemy + altura: %d \n", enemyY, enemyY + enemyHeight);
-
     if (
         (laserY + MENU_HEIGHT >= enemyY) &&
         (laserY <= enemyY + enemyHeight - MENU_HEIGHT))
     {
 
       remove_enemie(i);
+      score++;
       break;
     }
   }
@@ -209,14 +228,32 @@ void enemies_move(Enemies *enemies, int index)
   }
 }
 
+static float difculty_level_step = 0.1;
+int enemies_speed = 2;
 void handle_enimies()
 {
 
+  difculty_level_step += 0.1;
+
+  if ((int)difculty_level_step % 20 == 0 && (int)difculty_level_step != 0)
+  {
+    enemies_speed++;
+    difculty_level_step += 1;
+  }
   if (enemies_clock == 0)
   {
-    int random_y_position = random(GAME_BUFFER_START, SCREEN_HEIGHT - 10);
-    enemies_list.push_back(new Enemies(10, 7, random_y_position, SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_WIDTH, 0, 0));
-    enemies_clock = 30;
+
+    for (int i = 0; i < enemies_speed - 1; i++)
+    {
+
+      int random_y_position = random(GAME_BUFFER_START, SCREEN_HEIGHT - 10);
+      Enemies *new_enemie = new Enemies(10, 7, random_y_position, SCREEN_WIDTH, enemies_speed, SCREEN_HEIGHT, SCREEN_WIDTH, 0, 0);
+      enemies_list.push_back(new_enemie);
+    }
+
+    int factor = enemies_speed - 2;
+
+    enemies_clock = 30 - factor;
   }
   else
   {
@@ -251,6 +288,6 @@ void loop()
   display.clearDisplay();
   updateDisplayFromBuffer(gameBuffer);
   updateDisplayFromBuffer(menu);
-  setupMenu();
+  showScore();
   display.display();
 }

@@ -7,7 +7,7 @@ class Enemies : public Matrix, public DynamicEntity
 {
 public:
   Enemies(int height, int width,
-          int initial_y, int initial_x,
+          int initial_y, int initial_x, int speed,
           int max_y, int max_x,
           int min_y, int min_x);
 

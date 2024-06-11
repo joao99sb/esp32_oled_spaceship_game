@@ -15,4 +15,5 @@ public:
   virtual void moveDown() = 0;
   virtual void moveLeft() = 0;
   virtual void moveRight() = 0;
+  void increaseSpeed();
 };

@@ -8,7 +8,7 @@ Spaceship::Spaceship(int height, int width,
       DynamicEntity(initial_y, initial_x, max_y, max_x, min_y, min_x)
 {
 
-  this->speed = 3;
+  this->speed = 4;
   const int values[height][width] = {
       {1, 0, 0, 0, 0, 0},
       {1, 1, 0, 0, 0, 0},
