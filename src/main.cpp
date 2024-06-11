@@ -9,6 +9,7 @@
 #include "../include/buffer.h"
 #include "../include/staticEntity.h"
 #include "../include/enemies.h"
+#include "../include/sound.h"
 
 #define SCREEN_WIDTH 128 // Largura da tela em pixels
 #define SCREEN_HEIGHT 64 // Altura da tela em pixels
@@ -130,7 +131,7 @@ void setup()
     for (;;)
       ; // Não faça nada se falhar
   }
-
+  setupSound();
   // button setup
   pinMode(BUTTON_PIN_1, INPUT);
   pinMode(BUTTON_PIN_2, INPUT);
@@ -158,6 +159,7 @@ void setup()
     ;
     ;
   }
+  playInitialSound();
 }
 void remove_enemie(int index)
 {
@@ -225,6 +227,7 @@ void handle_actions()
     laser.blok->setCurrentY(spaceship_center_position); // Começa do centro do foguete
     gameBuffer->drawImageFromMatrix(laser.blok, laser.blok->getCurrentY() + GAME_BUFFER_START, 20);
 
+    playLaserSound();
     laser.is_laser_able = false;
 
     check_collision_with_enemies();
@@ -291,6 +294,7 @@ void handle_enimies()
 
 void endGame()
 {
+  playGameOverSound();
   int up_btn_state = digitalRead(BUTTON_PIN_1);
   int down_btn_state = digitalRead(BUTTON_PIN_2);
   int laser_btn_state = digitalRead(BUTTON_PIN_3);
