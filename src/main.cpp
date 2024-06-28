@@ -88,7 +88,6 @@ void showSideBar()
   display.setTextColor(WHITE); // Cor do texto
   display.setCursor(0, 0);     // Posição inicial do texto (x, y)
 
-  // Exibe "Hello, world!" na tela
   display.printf("score: %d    vidas: %d", score, lives);
 }
 
@@ -151,12 +150,13 @@ void setup()
   laser.blok = new StaticEntity(1, 10, spaceship_y_pos, 20);
   laser.blok->populateMatrix(1);
   laser.is_laser_able = true;
-  laser.laser_timer = 10;
+  laser.laser_timer = 5;
 
   initializeGameMsg();
-  while (digitalRead(BUTTON_PIN_1) == LOW && digitalRead(BUTTON_PIN_2) == LOW && digitalRead(BUTTON_PIN_3) == LOW)
+  while (digitalRead(BUTTON_PIN_1) == LOW &&
+         digitalRead(BUTTON_PIN_2) == LOW &&
+         digitalRead(BUTTON_PIN_3) == LOW)
   {
-    ;
     ;
   }
   playInitialSound();
@@ -239,7 +239,7 @@ void handle_actions()
     if (laser.laser_timer == 0)
     {
       laser.is_laser_able = true;
-      laser.laser_timer = 10;
+      laser.laser_timer = 5;
     }
   }
 }
@@ -322,7 +322,7 @@ void endGame()
 void loop()
 {
 
-  if (lives == 0)
+  if (lives <= 0)
   {
     endGame();
     delay(500);
